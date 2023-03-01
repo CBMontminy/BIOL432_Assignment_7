@@ -1,0 +1,134 @@
+---
+title: "A7_Montminy_Corbin"
+author: "Corbin Montminy"
+date: "2023-03-01"
+output: pdf_document
+---
+
+[My Github] (https://github.com/CBMontminy)
+
+# Loading packages
+```{r}
+library(ape)
+library(reshape2)
+library(ggtree)
+library(ggplot2)
+```
+
+
+# Load Dragon Matrix nexus file
+Note: This file contains my added dragons.  I added them to the nexus in a text editor. 
+```{r}
+DragonNexus=read.nexus.data("DragonMatrix.nex")
+tail(DragonNexus)
+```
+
+##Create dataframe by unlisting the nexus
+```{r}
+DragonNexusDF=data.frame(matrix(unlist(DragonNexus), ncol=78,byrow=T))
+row.names(DragonNexusDF)=names(DragonNexus)
+tail(DragonNexusDF)
+```
+# Weighing traits
+
+## Loading trait file
+Note: I was having issues saving the file to my directory.  I could save the file but it would always save as an "OMCSETTINGS" file and I could not get it to save as a csv.  This is why I load the file directly from the github repository instead of my directory.
+
+
+```{r}
+WeightsDat=read.csv("https://raw.githubusercontent.com/ColauttiLab/DragonPhylogeny/master/Data/Weights.csv")
+WeightsDat
+```
+
+## Creating a vector of weights
+
+```{r}
+Weights=paste0(WeightsDat$Weight,collapse="")
+Weights=strsplit(Weights,split="")[[1]]
+Weights
+```
+
+## Covnerting the letter weights to number values
+
+```{r}
+LETTERS
+which(LETTERS=="G")
+WeightsNum=rep(NA, length(Weights))
+for(i in 1:length(WeightsNum)){
+  if(Weights[i] %in% LETTERS){
+    WeightsNum[i]=which(LETTERS==Weights[i])+9
+  } else {
+    WeightsNum[i]=Weights[i]
+  }
+}
+WeightsNum=as.numeric(WeightsNum)
+```
+## Checking that the weight vector is the same length 
+
+```{r}
+length(WeightsNum)
+```
+## Multiplying the weight vector by the trait vector
+
+```{r}
+WtDragonNexus=DragonNexus # Make a new weighted data frame object
+for (i in 1:length(DragonNexus)){
+  RepWeight=DragonNexus[[i]]==1
+  WtDragonNexus[[i]][RepWeight]=WeightsNum[RepWeight]
+  RepWeight=NA
+}
+```
+
+## Calculate the distance matrix
+
+The objects must first be modified before creating the matrix
+```{r}
+WtDragonNexusDF=data.frame(matrix(unlist(WtDragonNexus),ncol=78,byrow=T))
+row.names(WtDragonNexusDF)=names(WtDragonNexus)
+WtDragonDist=dist(WtDragonNexusDF,method='euclidean')
+WtDragonDistMat=as.matrix(WtDragonDist)
+```
+
+## Visualizing the tree
+
+```{r}
+WtDragonTree=fastme.bal(WtDragonDist)
+WtDragonTreeNJ=nj(WtDragonDist)
+ggtree(WtDragonTree)+ geom_tiplab(size=2)
+ggtree(WtDragonTreeNJ,layout="circular")
+```
+The minimal evolution tree looks less clumped and overall better
+
+# Dragons
+
+```{r echo=F, out.width="65%", fig.align="center"}
+knitr::include_graphics("Images/FireDragon.jpg")
+```
+[Fire Dragon by LuanXeko-z] (https://www.deviantart.com/z-luanxeko-z/art/Commission-Work-Fire-Dragon-882839953)
+
+```{r echo=F, out.width="65%", fig.align="center"}
+knitr::include_graphics("Images/WaterDragon.jpg")
+```
+[Water Dragon by sheer-madness] (https://www.deviantart.com/sheer-madness/art/water-dragon-458911380)
+
+```{r echo=F, out.width="65%", fig.align="center"}
+knitr::include_graphics("Images/SpringDragon.jpg")
+```
+[Spring Dragon by sixthleafclover] (https://www.furaffinity.net/full/7768828/)
+
+# Formatting the tree
+
+## Colour by clade and highlighting each branch where my dragons are found
+
+```{r, warning=F}
+ggtree(WtDragonTree, layout="rectangular")+
+  geom_tiplab(size=2)+
+  geom_highlight(node=90, fill="yellow", )+
+  geom_highlight(node=10, fill="blue")+
+  geom_highlight(node=14, fill="red")+
+  geom_highlight(node=15, fill="green")
+ 
+```
+This figure shows a rectangular phylogenetic tree of the dragons from the dragon nexus, including my three dragons.  All three of my dragons were in the same clade (highlighted in yellow).  The individual node colours indicate where my dragons are.  The blue node shows the water dragon, the green node shows the earth dragon, and the red node shows the fire dragon.
+
+These three dragons were found in the western United States.  The water dragon was found off the coast of southern California.  The earth dragon was found in the redwood forests in California.  The fire dragon was found in the Yellowstone Hot Springs in Montana.  Their traits were identified and used against many other dragons across the world to create a dataframe of a large, diverse group of creatures.  From these traits, a phylogenetic tree was created to compare the evolution of the dragons, indicating groups through shared evolution.  From the results, we can see that these three new dragons are closely related to multiple Japanese dragons and another American dragon.  This may indicate that the American dragons were once in Japan before migrating to the Americas.  
